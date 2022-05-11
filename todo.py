@@ -98,8 +98,10 @@ class ThreadProgress(object):
 
         before = i % self.size
         after = (self.size - 1) - before
-        sublime.status_message('%s [%s=%s] (%s files scanned)' % \
-            (self.message, ' ' * before, ' ' * after, self.file_counter))
+        sublime.status_message(
+            f"{self.message} [{' ' * before}={' ' * after}] ({self.file_counter} files scanned)"
+        )
+
         if not after:
             self.addend = -1
         if not before:
@@ -208,9 +210,11 @@ class TodoRenderer(object):
 
     @property
     def view(self):
-        existing_results = [v for v in self.window.views() 
-                            if v.name() == self.view_name and v.is_scratch()]
-        if existing_results:
+        if existing_results := [
+            v
+            for v in self.window.views()
+            if v.name() == self.view_name and v.is_scratch()
+        ]:
             v = existing_results[0]
         else:
             v = self.window.new_file()
@@ -229,8 +233,7 @@ class TodoRenderer(object):
         messages = sorted(messages, key=key_func)
 
         for message_type, matches in groupby(messages, key=key_func):
-            matches = list(matches)
-            if matches:
+            if matches := list(matches):
                 yield ('header', u'\n## {0} ({1})'.format(message_type.upper().decode('utf8', 'ignore'), len(matches)), {})
                 for idx, m in enumerate(matches, 1):
                     msg = m['match'].msg.decode('utf8', 'ignore') ## Don't know the file encoding
@@ -268,7 +271,7 @@ class TodoRenderer(object):
         ## TODO: Abstract this out to a storage class Storage.get(region) ==> data dict
         ## Region() cannot be stored in settings, so convert to a primitive type
         # d_ = regions
-        d_ = dict(('{0},{1}'.format(k.a, k.b), v) for k, v in regions.iteritems())
+        d_ = {'{0},{1}'.format(k.a, k.b): v for k, v in regions.iteritems()}
         result_view.settings().set('result_regions', d_)
 
         ## Set syntax and settings
@@ -305,7 +308,7 @@ class FileScanCounter(object):
         self.log = logging.getLogger('SublimeTODO')
 
     def __call__(self, filepath):
-        self.log.debug(u'Scanning %s' % filepath)
+        self.log.debug(f'Scanning {filepath}')
         self.increment()
 
     def __str__(self):
@@ -325,10 +328,9 @@ class TodoCommand(sublime_plugin.TextCommand):
 
     def search_paths(self, window, open_files_only=False):
         """Return (filepaths, dirpaths)"""
-        return (
-            [view.file_name() for view in window.views() if view.file_name()], 
-            window.folders() if not open_files_only else []
-        )
+        return [
+            view.file_name() for view in window.views() if view.file_name()
+        ], [] if open_files_only else window.folders()
 
     def run(self, edit, open_files_only=False):
         window = self.view.window()
@@ -376,7 +378,7 @@ class NavigateResults(sublime_plugin.TextCommand):
 
         ##NOTE: numbers stored in settings are coerced to floats or longs
         selection = int(settings.get('selected_result', self.STARTING_POINT[direction]))
-        selection = selection + self.DIRECTION[direction]
+        selection += self.DIRECTION[direction]
         try:
             target = results[selection]
         except IndexError:
@@ -425,8 +427,7 @@ class MouseGotoComment(sublime_plugin.TextCommand):
         self.view.show(target)
 
     def get_result_region(self, pos):
-        line = self.view.line(pos)
-        return line
+        return self.view.line(pos)
 
     def run(self, edit):
         if not self.view.settings().get('result_regions'):
